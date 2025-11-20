@@ -1,425 +1,717 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LDT Transit Scheduler</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
     <style>
         :root {
             --primary: #2c3e50;
-            --accent: #3498db;
-            --bg: #f4f4f9;
+            --primary-dark: #1a252f;
+            --accent: #2980b9;
+            --bg: #f0f2f5;
             --card-bg: #ffffff;
             --text: #333;
-            --border: #e0e0e0;
+            --text-light: #666;
+            --border: #e1e4e8;
+            --radius: 8px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 10px; /* Reduced padding for mobile */
-            line-height: 1.6;
+            padding: 20px;
+            line-height: 1.5;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
+        /* Header */
         header {
-            border-bottom: 2px solid var(--bg);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
         }
 
-        h1 { margin: 0; color: var(--primary); font-size: 1.5rem; }
-        .subtitle { color: #666; font-size: 0.9em; margin-top: 5px; }
+        h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
 
-        /* Controls Grid - Responsive */
-        .controls {
+        .subtitle {
+            color: var(--text-light);
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+
+        /* Layout Grid */
+        .main-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* Smaller min-width for phones */
-            gap: 15px;
-            background: #f8f9fa;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
             padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             border: 1px solid var(--border);
         }
 
-        .control-group { display: flex; flex-direction: column; }
-        label { font-size: 0.8em; font-weight: 700; color: #555; margin-bottom: 6px; text-transform: uppercase; }
+        .card-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
 
-        /* Inputs touch-friendly */
-        input, select {
-            padding: 12px; /* Larger touch target */
+        /* Controls */
+        .controls-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        input {
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             transition: border-color 0.2s;
-            background: white;
         }
-        input:focus { border-color: var(--accent); outline: none; }
 
-        /* Action Button */
+        input:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.1);
+        }
+
         button.btn-main {
-            background-color: var(--accent);
+            grid-column: 1 / -1;
+            background-color: var(--primary);
             color: white;
-            font-weight: 700;
+            font-weight: 600;
             border: none;
-            padding: 12px 24px;
+            padding: 12px;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            height: 48px; /* Match input height roughly */
-            margin-top: auto;
-            width: 100%; /* Full width on mobile by default in grid */
+            transition: all 0.2s;
+            margin-top: 10px;
+            font-size: 1rem;
         }
-        button.btn-main:hover { background-color: #2980b9; }
-        button.btn-main:active { transform: scale(0.98); }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        button.btn-main:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        button.btn-main:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Map */
+        #map {
+            height: 300px;
+            width: 100%;
+            border-radius: 6px;
+            z-index: 1;
+            /* Fix for some stacking contexts */
+        }
 
         /* Status Bar */
         #status-bar {
-            padding: 10px 15px;
-            background: #e8f4fd;
-            color: #104e8b;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 0.9em;
+            background: #e3f2fd;
+            color: #0d47a1;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            font-size: 0.95em;
             display: flex;
             align-items: center;
-            min-height: 24px;
-            flex-wrap: wrap;
+            border: 1px solid #bbdefb;
         }
 
-        /* Error State */
-        .error-msg { background: #fde8e8 !important; color: #c0392b !important; }
+        .error-msg {
+            background: #ffebee !important;
+            color: #c62828 !important;
+            border-color: #ffcdd2 !important;
+        }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--accent);
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-top: 2px solid currentColor;
             border-radius: 50%;
             width: 16px;
             height: 16px;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
             margin-right: 10px;
             display: none;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Data Table */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
         .table-responsive {
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
-            border-radius: 6px;
-            border: 1px solid #eee;
         }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 900px; /* Force horizontal scroll on small screens */ }
-        thead { background-color: var(--primary); color: white; }
-        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #eee; white-space: nowrap; }
-        th { font-weight: 600; letter-spacing: 0.5px; font-size: 0.85rem; }
-        tr:nth-child(even) { background-color: #fcfcfc; }
-        tr:hover { background-color: #f0f7fc; }
 
-        /* Tags and Highlights */
-        .val-bright { font-weight: bold; color: #c0392b; }
-        .val-high { color: #27ae60; font-weight: bold; }
-        .time-cell { font-family: monospace; font-size: 1.05em; color: #444; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            min-width: 800px;
+        }
 
-        footer { margin-top: 40px; text-align: center; font-size: 0.8em; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+        thead {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border);
+        }
 
-        /* Mobile specific tweaks */
-        @media (min-width: 768px) {
-            .controls { grid-template-columns: repeat(4, 1fr) auto; } /* Single row on desktop */
-            button.btn-main { width: auto; }
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.1s;
+        }
+
+        th:hover {
+            background-color: #e9ecef;
+        }
+
+        th::after {
+            content: ' ↕';
+            font-size: 0.8em;
+            color: #999;
+            opacity: 0.5;
+        }
+
+        th.sort-asc::after {
+            content: ' ▲';
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        th.sort-desc::after {
+            content: ' ▼';
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+            color: #444;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .tag-bright {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .tag-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .font-mono {
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+            font-size: 0.95em;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.85em;
+            margin-top: 20px;
         }
     </style>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
+
 <body>
 
-<div class="container">
-    <header>
-        <div>
-            <h1>🔭 Transit Scheduler</h1>
-            <div class="subtitle">LDT Observatory Planner</div>
-        </div>
-        <div style="text-align: right; font-size: 0.85em; color: #666;">
-            <span id="db-info">Initializing...</span>
-        </div>
-    </header>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🔭 Transit Scheduler</h1>
+                <div class="subtitle">Professional Observatory Planner</div>
+            </div>
+            <div style="text-align: right; font-size: 0.85em; color: var(--text-light);">
+                <span id="db-info">Initializing...</span>
+            </div>
+        </header>
 
-    <div class="controls">
-        <div class="control-group">
-            <label for="obsDate">Night (Local)</label>
-            <input type="date" id="obsDate">
+        <div class="main-grid">
+            <!-- Left: Controls -->
+            <div class="card">
+                <div class="card-title">Configuration</div>
+                <div class="controls-form">
+                    <div class="control-group">
+                        <label for="obsDate">Observation Night</label>
+                        <input type="date" id="obsDate">
+                    </div>
+                    <div class="control-group">
+                        <label for="tzOffset">UTC Offset</label>
+                        <input type="number" id="tzOffset" value="-7">
+                    </div>
+                    <div class="control-group">
+                        <label for="lat">Latitude (°N)</label>
+                        <input type="number" id="lat" value="34.7444" step="0.0001">
+                    </div>
+                    <div class="control-group">
+                        <label for="lon">Longitude (°E)</label>
+                        <input type="number" id="lon" value="-111.4222" step="0.0001">
+                    </div>
+                    <button class="btn-main" id="calcBtn" onclick="calculateTransits()">Find Transits</button>
+                </div>
+            </div>
+
+            <!-- Right: Map -->
+            <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <div id="map"></div>
+                <div
+                    style="padding: 10px; font-size: 0.8em; color: #666; background: #fff; border-top: 1px solid #eee;">
+                    Click map to set location.
+                </div>
+            </div>
         </div>
-        <div class="control-group">
-            <label for="lat">Lat (°N)</label>
-            <input type="number" id="lat" value="34.7444" step="0.0001">
+
+        <div id="status-bar">
+            <div class="spinner" id="spinner"></div>
+            <span id="status-text">Ready. Select a date and location.</span>
         </div>
-        <div class="control-group">
-            <label for="lon">Lon (°E)</label>
-            <input type="number" id="lon" value="-111.4222" step="0.0001">
+
+        <div class="table-container">
+            <div class="table-responsive">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortResults('name')">Planet</th>
+                            <th onclick="sortResults('mag')">Mag (V)</th>
+                            <th onclick="sortResults('jd_start')">Start</th>
+                            <th onclick="sortResults('jd_mid')">Mid</th>
+                            <th onclick="sortResults('jd_end')">End</th>
+                            <th onclick="sortResults('alt')">Alt @ Mid</th>
+                            <th onclick="sortResults('dur')">Dur (hr)</th>
+                            <th onclick="sortResults('depth')">Depth (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <tr>
+                            <td colspan="8" style="text-align:center; padding: 40px; color: #999;">No data generated
+                                yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="control-group">
-            <label for="tzOffset">UTC Offset</label>
-            <input type="number" id="tzOffset" value="-7">
-        </div>
-        <button class="btn-main" id="calcBtn" onclick="calculateTransits()">Find Transits</button>
+
+        <footer>
+            Runs locally in browser. Data source: NASA Exoplanet Archive.
+        </footer>
     </div>
 
-    <div id="status-bar">
-        <div class="spinner" id="spinner"></div>
-        <span id="status-text">Waiting for input...</span>
-    </div>
+    <script>
+        // --- GLOBAL STATE ---
+        let exoplanetDB = [];
+        let currentResults = [];
+        let sortState = { col: 'jd_mid', dir: 'asc' };
+        let map, marker;
 
-    <div class="table-responsive">
-        <table id="resultsTable">
-            <thead>
-                <tr>
-                    <th>Planet</th>
-                    <th>Mag (V)</th>
-                    <th>Start (Local)</th>
-                    <th>Mid (Local)</th>
-                    <th>End (Local)</th>
-                    <th>Alt @ Mid</th>
-                    <th>Dur (hr)</th>
-                    <th>Depth (%)</th>
-                </tr>
-            </thead>
-            <tbody id="resultsBody">
-                <tr><td colspan="8" style="text-align:center; color:#999; padding: 30px;">Select a date and click 'Find Transits'</td></tr>
-            </tbody>
-        </table>
-    </div>
+        const MIN_ALT = 30.0;
+        const SUN_ALT_LIMIT = -12.0;
 
-    <footer>
-        Runs in browser. Source: NASA Exoplanet Archive.
-    </footer>
-</div>
+        // --- INITIALIZATION ---
+        window.onload = async function () {
+            // 1. Init Date
+            const today = new Date();
+            const localDate = today.toLocaleDateString('en-CA');
+            document.getElementById('obsDate').value = localDate;
 
-<script>
-    // --- GLOBAL STATE ---
-    let exoplanetDB = [];
-    const MIN_ALT = 30.0; // Minimum altitude to display
-    const SUN_ALT_LIMIT = -12.0; // Nautical Twilight
+            // 2. Init Map
+            initMap();
 
-    // --- INITIALIZATION ---
-    window.onload = async function() {
-        // Set date picker to today
-        const today = new Date();
-        // Adjust for timezone issue in date inputs
-        const localDate = today.toLocaleDateString('en-CA'); // YYYY-MM-DD
-        document.getElementById('obsDate').value = localDate;
+            // 3. Load Data
+            await loadData();
+        };
 
-        // Load Data
-        const dbInfo = document.getElementById('db-info');
-        const statusText = document.getElementById('status-text');
-        const statusBar = document.getElementById('status-bar');
-        const btn = document.getElementById('calcBtn');
+        function initMap() {
+            const latInput = document.getElementById('lat');
+            const lonInput = document.getElementById('lon');
+            const lat = parseFloat(latInput.value);
+            const lon = parseFloat(lonInput.value);
 
-        try {
-            dbInfo.innerText = "Loading data...";
-            const response = await fetch('exoplanets.json');
+            // Initialize Leaflet
+            map = L.map('map').setView([lat, lon], 6);
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-            exoplanetDB = await response.json();
-            dbInfo.innerText = `DB: ${exoplanetDB.length} planets`;
-            statusText.innerText = "Database ready. Select a date.";
-        } catch (err) {
-            console.error(err);
-            dbInfo.innerText = "❌ Load Error";
-            statusBar.classList.add('error-msg');
+            marker = L.marker([lat, lon], { draggable: true }).addTo(map);
 
-            // Specific helpful error for local file testing
-            if (window.location.protocol === 'file:') {
-                statusText.innerHTML = `<b>Security Error:</b> Browsers block opening JSON files directly from your hard drive (file://). <br>Please use a local server (<code>python -m http.server</code>) or upload these files to GitHub.`;
-            } else {
-                statusText.innerHTML = `Error loading <b>exoplanets.json</b>. Ensure the file exists in the same folder.`;
-            }
-            btn.disabled = true;
+            // Map Click Event
+            map.on('click', function (e) {
+                updateLocation(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Marker Drag Event
+            marker.on('dragend', function (e) {
+                const pos = marker.getLatLng();
+                updateLocation(pos.lat, pos.lng);
+            });
+
+            // Input Change Events
+            latInput.addEventListener('change', syncMapToInputs);
+            lonInput.addEventListener('change', syncMapToInputs);
         }
-    };
 
-    // --- MAIN LOGIC ---
+        function updateLocation(lat, lng) {
+            document.getElementById('lat').value = lat.toFixed(4);
+            document.getElementById('lon').value = lng.toFixed(4);
+            marker.setLatLng([lat, lng]);
+            // map.panTo([lat, lng]); // Optional: keep centered
+        }
 
-    async function calculateTransits() {
-        const lat = parseFloat(document.getElementById('lat').value);
-        const lon = parseFloat(document.getElementById('lon').value);
-        const dateStr = document.getElementById('obsDate').value;
-        const tzOffset = parseFloat(document.getElementById('tzOffset').value);
+        function syncMapToInputs() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                marker.setLatLng([lat, lon]);
+                map.panTo([lat, lon]);
+            }
+        }
 
-        if (!dateStr) { alert("Please select a date."); return; }
+        async function loadData() {
+            const dbInfo = document.getElementById('db-info');
+            const statusText = document.getElementById('status-text');
+            const statusBar = document.getElementById('status-bar');
+            const btn = document.getElementById('calcBtn');
 
-        // UI Updates
-        const tbody = document.getElementById('resultsBody');
-        const statusText = document.getElementById('status-text');
-        const spinner = document.getElementById('spinner');
-        const statusBar = document.getElementById('status-bar');
+            try {
+                dbInfo.innerText = "Loading DB...";
+                const response = await fetch('exoplanets.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-        statusBar.classList.remove('error-msg');
-        tbody.innerHTML = '';
-        statusText.innerText = "Calculating orbits...";
-        spinner.style.display = 'block';
+                exoplanetDB = await response.json();
+                dbInfo.innerText = `DB: ${exoplanetDB.length} planets`;
+                statusText.innerText = "Database ready.";
+            } catch (err) {
+                console.error(err);
+                dbInfo.innerText = "❌ Error";
+                statusBar.classList.add('error-msg');
+                statusText.innerHTML = "Error loading <b>exoplanets.json</b>. Check console.";
+                btn.disabled = true;
+            }
+        }
 
-        // Allow UI to render before heavy calc
-        await new Promise(r => setTimeout(r, 50));
+        // --- MAIN LOGIC ---
 
-        const results = [];
+        async function calculateTransits() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            const dateStr = document.getElementById('obsDate').value;
+            const tzOffset = parseFloat(document.getElementById('tzOffset').value);
 
-        // 1. Define Search Window (Noon to Noon Local Time)
-        const localNoon = new Date(`${dateStr}T12:00:00`);
-        const noonUTC = new Date(localNoon.getTime() - (tzOffset * 3600 * 1000));
+            if (!dateStr) { alert("Please select a date."); return; }
 
-        const jdStart = getJD(noonUTC);
-        const jdEnd = jdStart + 1.0;
+            // UI Updates
+            const statusText = document.getElementById('status-text');
+            const spinner = document.getElementById('spinner');
+            const statusBar = document.getElementById('status-bar');
 
-        // 2. Iterate all planets
-        for (let i = 0; i < exoplanetDB.length; i++) {
-            const p = exoplanetDB[i];
-            if (!p.P || !p.T0 || !p.D) continue;
+            statusBar.classList.remove('error-msg');
+            statusText.innerText = "Calculating orbits...";
+            spinner.style.display = 'block';
 
-            const n_approx = Math.ceil((jdStart - p.T0) / p.P);
+            // Yield to UI
+            await new Promise(r => setTimeout(r, 50));
 
-            for (let n = n_approx; n <= n_approx + 1; n++) {
-                const t_mid = p.T0 + n * p.P;
+            const results = [];
+            const localNoon = new Date(`${dateStr}T12:00:00`);
+            const noonUTC = new Date(localNoon.getTime() - (tzOffset * 3600 * 1000));
+            const jdStart = getJD(noonUTC);
+            const jdEnd = jdStart + 1.0;
 
-                // Is transit within window?
-                if (t_mid >= jdStart && t_mid <= jdEnd) {
+            for (let i = 0; i < exoplanetDB.length; i++) {
+                const p = exoplanetDB[i];
+                if (!p.P || !p.T0 || !p.D) continue;
 
-                    // A. Is it Dark?
-                    const sunPos = getSunPosition(t_mid);
-                    const lst = getLST(t_mid, lon);
-                    const sunAlt = getAltitude(sunPos.ra, sunPos.dec, lat, lst);
+                const n_approx = Math.ceil((jdStart - p.T0) / p.P);
 
-                    if (sunAlt > SUN_ALT_LIMIT) continue;
+                for (let n = n_approx; n <= n_approx + 1; n++) {
+                    const t_mid = p.T0 + n * p.P;
 
-                    // B. Is Planet visible?
-                    const planetAlt = getAltitude(p.R, p.d, lat, lst);
-                    if (planetAlt < MIN_ALT) continue;
+                    if (t_mid >= jdStart && t_mid <= jdEnd) {
+                        const sunPos = getSunPosition(t_mid);
+                        const lst = getLST(t_mid, lon);
+                        const sunAlt = getAltitude(sunPos.ra, sunPos.dec, lat, lst);
 
-                    // C. Calculate Start/End Times
-                    // Duration is in hours. JD is days.
-                    // Half duration in days = (Duration / 24) / 2
-                    const halfDurDays = (p.D / 24.0) / 2.0;
-                    const t_start = t_mid - halfDurDays;
-                    const t_end = t_mid + halfDurDays;
+                        if (sunAlt > SUN_ALT_LIMIT) continue;
 
-                    results.push({
-                        name: p.N,
-                        mag: p.V,
-                        jd_mid: t_mid,
-                        jd_start: t_start,
-                        jd_end: t_end,
-                        alt: planetAlt,
-                        dur: p.D,
-                        depth: p.Dp
-                    });
+                        const planetAlt = getAltitude(p.R, p.d, lat, lst);
+                        if (planetAlt < MIN_ALT) continue;
+
+                        const halfDurDays = (p.D / 24.0) / 2.0;
+
+                        results.push({
+                            name: p.N,
+                            mag: p.V,
+                            jd_mid: t_mid,
+                            jd_start: t_mid - halfDurDays,
+                            jd_end: t_mid + halfDurDays,
+                            alt: planetAlt,
+                            dur: p.D,
+                            depth: p.Dp
+                        });
+                    }
                 }
             }
+
+            currentResults = results;
+            spinner.style.display = 'none';
+            statusText.innerText = `Found ${results.length} events.`;
+
+            // Default sort
+            sortResults('jd_mid', 'asc');
         }
 
-        // Sort by Time
-        results.sort((a, b) => a.jd_mid - b.jd_mid);
+        function sortResults(col, forceDir = null) {
+            if (currentResults.length === 0) return;
 
-        // Render
-        spinner.style.display = 'none';
-        statusText.innerText = `Found ${results.length} observable events for ${dateStr}.`;
+            // Toggle direction if same column clicked
+            if (!forceDir) {
+                if (sortState.col === col) {
+                    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState.col = col;
+                    sortState.dir = 'asc'; // Default new col to asc
+                }
+            } else {
+                sortState.col = col;
+                sortState.dir = forceDir;
+            }
 
-        if (results.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px;">No observable transits (Alt > ${MIN_ALT}°, Sun < ${SUN_ALT_LIMIT}°).</td></tr>`;
-            return;
+            // Update Headers UI
+            document.querySelectorAll('th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.textContent.toLowerCase().includes(getColHeaderName(col))) {
+                    th.classList.add(`sort-${sortState.dir}`);
+                }
+            });
+            // Note: The header matching above is a bit loose, better to use data attributes, 
+            // but for this simple app, we'll just match by index or rely on the onclick.
+            // Actually, let's just re-render headers or use a cleaner way.
+            // For now, let's just update the visual indicator on the clicked element if we had the event.
+            // Since we passed the string, we don't have the element reference easily without querying.
+            // Let's just re-render the table which is cheap.
+
+            // Sort Data
+            currentResults.sort((a, b) => {
+                let valA = a[col];
+                let valB = b[col];
+
+                if (valA < valB) return sortState.dir === 'asc' ? -1 : 1;
+                if (valA > valB) return sortState.dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderTable();
+            updateHeaderStyles(col, sortState.dir);
         }
 
-        results.forEach(r => {
-            const tr = document.createElement('tr');
+        function updateHeaderStyles(activeCol, dir) {
+            const headers = document.querySelectorAll('th');
+            const map = {
+                'name': 0, 'mag': 1, 'jd_start': 2, 'jd_mid': 3, 'jd_end': 4, 'alt': 5, 'dur': 6, 'depth': 7
+            };
+            headers.forEach((th, idx) => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (idx === map[activeCol]) {
+                    th.classList.add(`sort-${dir}`);
+                }
+            });
+        }
 
-            // Formatting function
+        function getColHeaderName(col) {
+            // Helper not strictly needed if we use index mapping above
+            return "";
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            if (currentResults.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px;">No observable transits found.</td></tr>`;
+                return;
+            }
+
+            const tzOffset = parseFloat(document.getElementById('tzOffset').value);
+
             const fmtTime = (jd) => {
                 const d = getDateFromJD(jd);
                 const local = new Date(d.getTime() + (tzOffset * 3600 * 1000));
                 return local.toISOString().replace('T', ' ').substring(11, 16);
             };
 
-            const tStart = fmtTime(r.jd_start);
-            const tMid = fmtTime(r.jd_mid);
-            const tEnd = fmtTime(r.jd_end);
+            currentResults.forEach(r => {
+                const tr = document.createElement('tr');
 
-            const magClass = r.mag < 11 ? 'val-bright' : '';
-            const altClass = r.alt > 50 ? 'val-high' : '';
+                const magTag = r.mag < 11 ? '<span class="tag tag-bright">Bright</span>' : '';
+                const altTag = r.alt > 60 ? 'val-high' : ''; // Class for text color
 
-            tr.innerHTML = `
+                tr.innerHTML = `
                 <td style="font-weight:600">${r.name}</td>
-                <td class="${magClass}">${r.mag.toFixed(1)}</td>
-                <td class="time-cell">${tStart}</td>
-                <td class="time-cell" style="font-weight:bold">${tMid}</td>
-                <td class="time-cell">${tEnd}</td>
-                <td class="${altClass}">${r.alt.toFixed(1)}°</td>
-                <td>${r.dur.toFixed(1)} h</td>
-                <td>${r.depth.toFixed(2)}%</td>
+                <td>${r.mag.toFixed(1)} ${magTag}</td>
+                <td class="font-mono">${fmtTime(r.jd_start)}</td>
+                <td class="font-mono" style="font-weight:bold">${fmtTime(r.jd_mid)}</td>
+                <td class="font-mono">${fmtTime(r.jd_end)}</td>
+                <td class="${altTag}">${r.alt.toFixed(1)}°</td>
+                <td>${r.dur.toFixed(1)}</td>
+                <td>${r.depth.toFixed(2)}</td>
             `;
-            tbody.appendChild(tr);
-        });
-    }
+                tbody.appendChild(tr);
+            });
+        }
 
-    // --- ASTRONOMY MATH UTILITIES ---
-    function getJD(date) { return (date.getTime() / 86400000.0) + 2440587.5; }
-    function getDateFromJD(jd) { return new Date((jd - 2440587.5) * 86400000.0); }
-    function toRad(deg) { return deg * Math.PI / 180.0; }
-    function toDeg(rad) { return rad * 180.0 / Math.PI; }
+        // --- ASTRONOMY MATH UTILITIES ---
+        function getJD(date) { return (date.getTime() / 86400000.0) + 2440587.5; }
+        function getDateFromJD(jd) { return new Date((jd - 2440587.5) * 86400000.0); }
+        function toRad(deg) { return deg * Math.PI / 180.0; }
+        function toDeg(rad) { return rad * 180.0 / Math.PI; }
 
-    function getGMST(jd) {
-        const D = jd - 2451545.0;
-        let gmst = 18.697374558 + 24.06570982441908 * D;
-        gmst = gmst % 24.0;
-        if (gmst < 0) gmst += 24.0;
-        return gmst;
-    }
+        function getGMST(jd) {
+            const D = jd - 2451545.0;
+            let gmst = 18.697374558 + 24.06570982441908 * D;
+            gmst = gmst % 24.0;
+            if (gmst < 0) gmst += 24.0;
+            return gmst;
+        }
 
-    function getLST(jd, lon) {
-        const gmst = getGMST(jd);
-        let lst = gmst + (lon / 15.0);
-        lst = lst % 24.0;
-        if (lst < 0) lst += 24.0;
-        return lst;
-    }
+        function getLST(jd, lon) {
+            const gmst = getGMST(jd);
+            let lst = gmst + (lon / 15.0);
+            lst = lst % 24.0;
+            if (lst < 0) lst += 24.0;
+            return lst;
+        }
 
-    function getAltitude(ra, dec, lat, lst) {
-        const ha = (lst - (ra / 15.0)) * 15.0;
-        let ha_norm = ha % 360;
-        if (ha_norm > 180) ha_norm -= 360;
-        if (ha_norm < -180) ha_norm += 360;
+        function getAltitude(ra, dec, lat, lst) {
+            const ha = (lst - (ra / 15.0)) * 15.0;
+            let ha_norm = ha % 360;
+            if (ha_norm > 180) ha_norm -= 360;
+            if (ha_norm < -180) ha_norm += 360;
 
-        const sinAlt = Math.sin(toRad(lat)) * Math.sin(toRad(dec)) +
-                       Math.cos(toRad(lat)) * Math.cos(toRad(dec)) * Math.cos(toRad(ha_norm));
-        return toDeg(Math.asin(sinAlt));
-    }
+            const sinAlt = Math.sin(toRad(lat)) * Math.sin(toRad(dec)) +
+                Math.cos(toRad(lat)) * Math.cos(toRad(dec)) * Math.cos(toRad(ha_norm));
+            return toDeg(Math.asin(sinAlt));
+        }
 
-    function getSunPosition(jd) {
-        const n = jd - 2451545.0;
-        const L = (280.460 + 0.9856474 * n) % 360;
-        const g = (357.528 + 0.9856003 * n) % 360;
-        const lambda = L + 1.915 * Math.sin(toRad(g)) + 0.020 * Math.sin(toRad(2*g));
-        const epsilon = 23.439 - 0.0000004 * n;
-        const ra = toDeg(Math.atan2(Math.cos(toRad(epsilon)) * Math.sin(toRad(lambda)), Math.cos(toRad(lambda))));
-        const dec = toDeg(Math.asin(Math.sin(toRad(epsilon)) * Math.sin(toRad(lambda))));
-        let ra_corr = ra;
-        if (ra_corr < 0) ra_corr += 360;
-        return { ra: ra_corr, dec: dec };
-    }
-</script>
+        function getSunPosition(jd) {
+            const n = jd - 2451545.0;
+            const L = (280.460 + 0.9856474 * n) % 360;
+            const g = (357.528 + 0.9856003 * n) % 360;
+            const lambda = L + 1.915 * Math.sin(toRad(g)) + 0.020 * Math.sin(toRad(2 * g));
+            const epsilon = 23.439 - 0.0000004 * n;
+            const ra = toDeg(Math.atan2(Math.cos(toRad(epsilon)) * Math.sin(toRad(lambda)), Math.cos(toRad(lambda))));
+            const dec = toDeg(Math.asin(Math.sin(toRad(epsilon)) * Math.sin(toRad(lambda))));
+            let ra_corr = ra;
+            if (ra_corr < 0) ra_corr += 360;
+            return { ra: ra_corr, dec: dec };
+        }
+    </script>
 </body>
+
 </html>
