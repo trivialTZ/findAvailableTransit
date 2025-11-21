@@ -64,7 +64,7 @@
                 <div class="brand">
                     <h1 data-i18n="title">🔭 Find Available Transit</h1>
                 </div>
-                <div id="db-info" data-i18n="initializing">Initializing...</div>
+                <div id="db-info"></div>
             </div>
             <div class="lang-switch">
                 <button class="lang-btn active" onclick="setLanguage('en')">EN</button>
@@ -171,6 +171,7 @@
         let sortState = { col: 'jd_mid', dir: 'asc' };
         let map, marker;
         let currentLang = 'en';
+        let dbState = 'loading';
 
         const MIN_ALT = 30.0;
         const SUN_ALT_LIMIT = -12.0;
@@ -179,8 +180,9 @@
             en: {
                 title: "🔭 Find Available Transit",
                 initializing: "Initializing...",
+                db_stats: "DB: {n} planets",
                 about_title: "About this Tool",
-                about_desc: "This tool helps astronomers plan exoplanet transit observations. It calculates visibility based on your location and time, filtering for events that occur at night and above a minimum altitude.",
+                about_desc: "This tool helps planning exoplanet transit observations. It calculates visibility based on your location and time, filtering for events that occur at night and above a minimum altitude.",
                 about_li1: "Calculates local sidereal time and sun altitude.",
                 about_li2: "Filters for transits visible from your location.",
                 about_li3: "Data sourced from NASA Exoplanet Archive.",
@@ -215,8 +217,9 @@
             zh: {
                 title: "🔭 寻找系外行星凌日",
                 initializing: "初始化中...",
+                db_stats: "数据库: {n} 颗行星",
                 about_title: "关于本工具",
-                about_desc: "本工具帮助天文学家规划系外行星凌日观测。它根据您的位置和时间计算可见性，筛选出发生在夜间且高于最小仰角的事件。",
+                about_desc: "本工具帮助规划系外行星凌日观测。它根据您的位置和时间计算可见性，筛选出发生在夜间且高于最小仰角的事件。",
                 about_li1: "计算地方恒星时和太阳仰角。",
                 about_li2: "筛选出您所在位置可见的凌日事件。",
                 about_li3: "数据来自 NASA 系外行星档案。",
@@ -290,6 +293,19 @@
             } else if (statusText.innerText.includes('Found') || statusText.innerText.includes('找到')) {
                 statusText.innerText = translations[lang]['found_events'].replace('{n}', currentResults.length);
             }
+
+            updateDBInfo();
+        }
+
+        function updateDBInfo() {
+            const dbInfo = document.getElementById('db-info');
+            if (dbState === 'loading') {
+                dbInfo.innerText = translations[currentLang]['loading_db'];
+            } else if (dbState === 'ready') {
+                dbInfo.innerText = translations[currentLang]['db_stats'].replace('{n}', exoplanetDB.length);
+            } else if (dbState === 'error') {
+                dbInfo.innerText = "❌ Error";
+            }
         }
 
         // --- INITIALIZATION ---
@@ -362,16 +378,19 @@
             const btn = document.getElementById('calcBtn');
 
             try {
-                dbInfo.innerText = translations[currentLang]['loading_db'];
+                dbState = 'loading';
+                updateDBInfo();
                 const response = await fetch('exoplanets.json');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 exoplanetDB = await response.json();
-                dbInfo.innerText = `DB: ${exoplanetDB.length} planets`; // Keep this simple or translate part of it
+                dbState = 'ready';
+                updateDBInfo();
                 statusText.innerText = translations[currentLang]['db_ready'];
             } catch (err) {
                 console.error(err);
-                dbInfo.innerText = "❌ Error";
+                dbState = 'error';
+                updateDBInfo();
                 statusBar.classList.add('error-msg');
                 statusText.innerHTML = translations[currentLang]['db_error'];
                 btn.disabled = true;
