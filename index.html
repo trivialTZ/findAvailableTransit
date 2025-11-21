@@ -18,54 +18,108 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        /* Inline styles for things not yet in index.css or specific overrides */
+        .about-section {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .about-section h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .about-section p {
+            margin-bottom: 10px;
+        }
+
+        .about-section ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+
+        .about-section li {
+            margin-bottom: 5px;
+            color: var(--text-muted);
+        }
+    </style>
 </head>
 
 <body>
 
     <div class="container">
         <header>
-            <div class="brand">
-                <h1>🔭 Find Available Transit</h1>
-                <div class="subtitle">Professional Observatory Planner</div>
+            <div class="header-content">
+                <div class="brand">
+                    <h1 data-i18n="title">🔭 Find Available Transit</h1>
+                </div>
+                <div id="db-info" data-i18n="initializing">Initializing...</div>
             </div>
-            <div id="db-info">Initializing...</div>
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn" onclick="setLanguage('zh')">中文</button>
+            </div>
         </header>
+
+        <div class="about-section">
+            <h3 data-i18n="about_title">About this Tool</h3>
+            <p data-i18n="about_desc">This tool helps astronomers plan exoplanet transit observations. It calculates
+                visibility based on your location and time, filtering for events that occur at night and above a minimum
+                altitude.</p>
+            <ul style="list-style-type: disc;">
+                <li data-i18n="about_li1">Calculates local sidereal time and sun altitude.</li>
+                <li data-i18n="about_li2">Filters for transits visible from your location.</li>
+                <li data-i18n="about_li3">Data sourced from NASA Exoplanet Archive.</li>
+            </ul>
+        </div>
 
         <div class="main-grid">
             <!-- Left: Controls -->
             <div class="card">
-                <div class="card-header">Configuration</div>
+                <div class="card-header" data-i18n="configuration">Configuration</div>
                 <div class="card-body">
                     <div class="controls-form">
                         <div class="control-group">
-                            <label for="obsDate">Observation Night</label>
+                            <label for="obsDate" data-i18n="obs_date">Observation Night</label>
                             <input type="date" id="obsDate">
                         </div>
                         <div class="control-group">
-                            <label for="tzOffset">UTC Offset</label>
+                            <label for="tzOffset" data-i18n="utc_offset">UTC Offset</label>
                             <input type="number" id="tzOffset" value="-7">
                         </div>
                         <div class="control-group">
-                            <label for="lat">Latitude (°N)</label>
+                            <label for="lat" data-i18n="latitude">Latitude (°N)</label>
                             <input type="number" id="lat" value="40.9148" step="0.0001">
                         </div>
                         <div class="control-group">
-                            <label for="lon">Longitude (°E)</label>
+                            <label for="lon" data-i18n="longitude">Longitude (°E)</label>
                             <input type="number" id="lon" value="-73.1257" step="0.0001">
                         </div>
                         <div class="control-group">
-                            <label for="elev">Elevation (m)</label>
+                            <label for="elev" data-i18n="elevation">Elevation (m)</label>
                             <input type="number" id="elev" value="15" step="1">
                         </div>
-                        <button class="btn-main" id="calcBtn" onclick="calculateTransits()">Find Transits</button>
+                        <button class="btn-main" id="calcBtn" onclick="calculateTransits()"
+                            data-i18n="find_transits">Find Transits</button>
                     </div>
                 </div>
             </div>
 
             <!-- Right: Map -->
-            <div class="card" style="padding: 0; display: flex; flex-direction: column;">
+            <div class="card map-card">
                 <div id="map"></div>
-                <div class="map-hint">
+                <div class="map-hint" data-i18n="map_hint">
                     Tap map to set location
                 </div>
             </div>
@@ -73,7 +127,7 @@
 
         <div id="status-bar">
             <div class="spinner" id="spinner"></div>
-            <span id="status-text">Ready. Select a date and location.</span>
+            <span id="status-text" data-i18n="ready">Ready. Select a date and location.</span>
         </div>
 
         <div class="table-container">
@@ -81,21 +135,22 @@
                 <table id="resultsTable">
                     <thead>
                         <tr>
-                            <th onclick="sortResults('name')">Planet</th>
-                            <th onclick="sortResults('mag')">Mag (V)</th>
-                            <th onclick="sortResults('ra')">RA</th>
-                            <th onclick="sortResults('dec')">Dec</th>
-                            <th onclick="sortResults('jd_start')">Start</th>
-                            <th onclick="sortResults('jd_mid')">Mid</th>
-                            <th onclick="sortResults('jd_end')">End</th>
-                            <th onclick="sortResults('alt')">Alt @ Mid</th>
-                            <th onclick="sortResults('dur')">Dur (hr)</th>
-                            <th onclick="sortResults('depth')">Depth (%)</th>
+                            <th onclick="sortResults('name')" data-i18n="col_planet">Planet</th>
+                            <th onclick="sortResults('mag')" data-i18n="col_mag">Mag (V)</th>
+                            <th onclick="sortResults('ra')" data-i18n="col_ra">RA</th>
+                            <th onclick="sortResults('dec')" data-i18n="col_dec">Dec</th>
+                            <th onclick="sortResults('jd_start')" data-i18n="col_start">Start</th>
+                            <th onclick="sortResults('jd_mid')" data-i18n="col_mid">Mid</th>
+                            <th onclick="sortResults('jd_end')" data-i18n="col_end">End</th>
+                            <th onclick="sortResults('alt')" data-i18n="col_alt">Alt @ Mid</th>
+                            <th onclick="sortResults('dur')" data-i18n="col_dur">Dur (hr)</th>
+                            <th onclick="sortResults('depth')" data-i18n="col_depth">Depth (%)</th>
                         </tr>
                     </thead>
                     <tbody id="resultsBody">
                         <tr>
-                            <td colspan="10" style="text-align:center; padding: 40px; color: var(--text-muted);">
+                            <td colspan="10" style="text-align:center; padding: 40px; color: var(--text-muted);"
+                                data-i18n="no_data">
                                 No data generated yet.
                             </td>
                         </tr>
@@ -105,7 +160,7 @@
         </div>
 
         <footer>
-            Runs locally in browser. Data source: NASA Exoplanet Archive.
+            <span data-i18n="footer">Runs locally in browser. Data source: NASA Exoplanet Archive.</span>
         </footer>
     </div>
 
@@ -115,9 +170,127 @@
         let currentResults = [];
         let sortState = { col: 'jd_mid', dir: 'asc' };
         let map, marker;
+        let currentLang = 'en';
 
         const MIN_ALT = 30.0;
         const SUN_ALT_LIMIT = -12.0;
+
+        const translations = {
+            en: {
+                title: "🔭 Find Available Transit",
+                initializing: "Initializing...",
+                about_title: "About this Tool",
+                about_desc: "This tool helps astronomers plan exoplanet transit observations. It calculates visibility based on your location and time, filtering for events that occur at night and above a minimum altitude.",
+                about_li1: "Calculates local sidereal time and sun altitude.",
+                about_li2: "Filters for transits visible from your location.",
+                about_li3: "Data sourced from NASA Exoplanet Archive.",
+                configuration: "Configuration",
+                obs_date: "Observation Night",
+                utc_offset: "UTC Offset",
+                latitude: "Latitude (°N)",
+                longitude: "Longitude (°E)",
+                elevation: "Elevation (m)",
+                find_transits: "Find Transits",
+                map_hint: "Tap map to set location",
+                ready: "Ready. Select a date and location.",
+                calculating: "Calculating orbits...",
+                found_events: "Found {n} events.",
+                col_planet: "Planet",
+                col_mag: "Mag (V)",
+                col_ra: "RA",
+                col_dec: "Dec",
+                col_start: "Start",
+                col_mid: "Mid",
+                col_end: "End",
+                col_alt: "Alt @ Mid",
+                col_dur: "Dur (hr)",
+                col_depth: "Depth (%)",
+                no_data: "No data generated yet.",
+                no_observable: "No observable transits found.",
+                footer: "Runs locally in browser. Data source: NASA Exoplanet Archive.",
+                db_ready: "Database ready.",
+                db_error: "Error loading exoplanets.json",
+                loading_db: "Loading DB..."
+            },
+            zh: {
+                title: "🔭 寻找系外行星凌日",
+                initializing: "初始化中...",
+                about_title: "关于本工具",
+                about_desc: "本工具帮助天文学家规划系外行星凌日观测。它根据您的位置和时间计算可见性，筛选出发生在夜间且高于最小仰角的事件。",
+                about_li1: "计算地方恒星时和太阳仰角。",
+                about_li2: "筛选出您所在位置可见的凌日事件。",
+                about_li3: "数据来自 NASA 系外行星档案。",
+                configuration: "观测设置",
+                obs_date: "观测日期",
+                utc_offset: "UTC 时区",
+                latitude: "纬度 (°N)",
+                longitude: "经度 (°E)",
+                elevation: "海拔 (m)",
+                find_transits: "计算凌日",
+                map_hint: "点击地图设置坐标",
+                ready: "准备就绪。请选择日期和地点。",
+                calculating: "正在计算轨道...",
+                found_events: "找到 {n} 个事件。",
+                col_planet: "行星",
+                col_mag: "亮度 (V)",
+                col_ra: "赤经",
+                col_dec: "赤纬",
+                col_start: "开始",
+                col_mid: "中点",
+                col_end: "结束",
+                col_alt: "仰角",
+                col_dur: "时长 (时)",
+                col_depth: "深度 (%)",
+                no_data: "暂无数据。",
+                no_observable: "未发现可观测的凌日事件。",
+                footer: "在浏览器本地运行。数据来源：NASA 系外行星档案。",
+                db_ready: "数据库就绪。",
+                db_error: "加载 exoplanets.json 出错",
+                loading_db: "加载数据库..."
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+
+            // Update buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.innerText.toLowerCase().includes(lang === 'en' ? 'en' : '中文')) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Re-render table if data exists to update headers/empty message
+            if (currentResults.length > 0 || document.querySelector('#resultsBody td').getAttribute('data-i18n') === 'no_data') {
+                // If table is empty (initial state), update the "No data" message
+                if (currentResults.length === 0) {
+                    const noDataCell = document.querySelector('#resultsBody td');
+                    if (noDataCell) {
+                        noDataCell.innerText = translations[lang]['no_data'];
+                    }
+                } else {
+                    const firstRow = document.querySelector('#resultsBody tr td');
+                    if (firstRow && firstRow.colSpan === 10) {
+                        firstRow.innerText = translations[lang]['no_observable'];
+                    }
+                }
+            }
+
+            // Update status text if it's a static message
+            const statusText = document.getElementById('status-text');
+            if (statusText.innerText === translations['en']['ready'] || statusText.innerText === translations['zh']['ready']) {
+                statusText.innerText = translations[lang]['ready'];
+            } else if (statusText.innerText.includes('Found') || statusText.innerText.includes('找到')) {
+                statusText.innerText = translations[lang]['found_events'].replace('{n}', currentResults.length);
+            }
+        }
 
         // --- INITIALIZATION ---
         window.onload = async function () {
@@ -189,18 +362,18 @@
             const btn = document.getElementById('calcBtn');
 
             try {
-                dbInfo.innerText = "Loading DB...";
+                dbInfo.innerText = translations[currentLang]['loading_db'];
                 const response = await fetch('exoplanets.json');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 exoplanetDB = await response.json();
-                dbInfo.innerText = `DB: ${exoplanetDB.length} planets`;
-                statusText.innerText = "Database ready.";
+                dbInfo.innerText = `DB: ${exoplanetDB.length} planets`; // Keep this simple or translate part of it
+                statusText.innerText = translations[currentLang]['db_ready'];
             } catch (err) {
                 console.error(err);
                 dbInfo.innerText = "❌ Error";
                 statusBar.classList.add('error-msg');
-                statusText.innerHTML = "Error loading <b>exoplanets.json</b>. Check console.";
+                statusText.innerHTML = translations[currentLang]['db_error'];
                 btn.disabled = true;
             }
         }
@@ -222,7 +395,7 @@
             const statusBar = document.getElementById('status-bar');
 
             statusBar.classList.remove('error-msg');
-            statusText.innerText = "Calculating orbits...";
+            statusText.innerText = translations[currentLang]['calculating'];
             spinner.style.display = 'block';
 
             // Yield to UI
@@ -287,7 +460,7 @@
 
             currentResults = results;
             spinner.style.display = 'none';
-            statusText.innerText = `Found ${results.length} events.`;
+            statusText.innerText = translations[currentLang]['found_events'].replace('{n}', results.length);
 
             // Default sort
             sortResults('jd_mid', 'asc');
@@ -341,7 +514,7 @@
             tbody.innerHTML = '';
 
             if (currentResults.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:20px; color: var(--text-muted);">No observable transits found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:20px; color: var(--text-muted);">${translations[currentLang]['no_observable']}</td></tr>`;
                 return;
             }
 
