@@ -47,11 +47,15 @@
                         </div>
                         <div class="control-group">
                             <label for="lat">Latitude (°N)</label>
-                            <input type="number" id="lat" value="34.7444" step="0.0001">
+                            <input type="number" id="lat" value="40.9148" step="0.0001">
                         </div>
                         <div class="control-group">
                             <label for="lon">Longitude (°E)</label>
-                            <input type="number" id="lon" value="-111.4222" step="0.0001">
+                            <input type="number" id="lon" value="-73.1257" step="0.0001">
+                        </div>
+                        <div class="control-group">
+                            <label for="elev">Elevation (m)</label>
+                            <input type="number" id="elev" value="15" step="1">
                         </div>
                         <button class="btn-main" id="calcBtn" onclick="calculateTransits()">Find Transits</button>
                     </div>
@@ -79,6 +83,8 @@
                         <tr>
                             <th onclick="sortResults('name')">Planet</th>
                             <th onclick="sortResults('mag')">Mag (V)</th>
+                            <th onclick="sortResults('ra')">RA</th>
+                            <th onclick="sortResults('dec')">Dec</th>
                             <th onclick="sortResults('jd_start')">Start</th>
                             <th onclick="sortResults('jd_mid')">Mid</th>
                             <th onclick="sortResults('jd_end')">End</th>
@@ -89,7 +95,7 @@
                     </thead>
                     <tbody id="resultsBody">
                         <tr>
-                            <td colspan="8" style="text-align:center; padding: 40px; color: var(--text-muted);">
+                            <td colspan="10" style="text-align:center; padding: 40px; color: var(--text-muted);">
                                 No data generated yet.
                             </td>
                         </tr>
@@ -204,6 +210,7 @@
         async function calculateTransits() {
             const lat = parseFloat(document.getElementById('lat').value);
             const lon = parseFloat(document.getElementById('lon').value);
+            const elev = parseFloat(document.getElementById('elev').value) || 0;
             const dateStr = document.getElementById('obsDate').value;
             const tzOffset = parseFloat(document.getElementById('tzOffset').value);
 
@@ -224,37 +231,53 @@
             const results = [];
             const localNoon = new Date(`${dateStr}T12:00:00`);
             const noonUTC = new Date(localNoon.getTime() - (tzOffset * 3600 * 1000));
-            const jdStart = getJD(noonUTC);
-            const jdEnd = jdStart + 1.0;
+            const jdStartWindow = getJD(noonUTC);
+            const jdEndWindow = jdStartWindow + 1.0;
 
             for (let i = 0; i < exoplanetDB.length; i++) {
                 const p = exoplanetDB[i];
                 if (!p.P || !p.T0 || !p.D) continue;
 
-                const n_approx = Math.ceil((jdStart - p.T0) / p.P);
+                const n_approx = Math.ceil((jdStartWindow - p.T0) / p.P);
 
                 for (let n = n_approx; n <= n_approx + 1; n++) {
                     const t_mid = p.T0 + n * p.P;
 
-                    if (t_mid >= jdStart && t_mid <= jdEnd) {
-                        const sunPos = getSunPosition(t_mid);
-                        const lst = getLST(t_mid, lon);
-                        const sunAlt = getAltitude(sunPos.ra, sunPos.dec, lat, lst);
-
-                        if (sunAlt > SUN_ALT_LIMIT) continue;
-
-                        const planetAlt = getAltitude(p.R, p.d, lat, lst);
-                        if (planetAlt < MIN_ALT) continue;
-
+                    if (t_mid >= jdStartWindow && t_mid <= jdEndWindow) {
                         const halfDurDays = (p.D / 24.0) / 2.0;
+                        const t_start = t_mid - halfDurDays;
+                        const t_end = t_mid + halfDurDays;
+
+                        // Check visibility for Start, Mid, End
+                        const times = [t_start, t_mid, t_end];
+                        let visible = true;
+
+                        for (let t of times) {
+                            const sunPos = getSunPosition(t);
+                            const lst = getLST(t, lon);
+                            const sunAlt = getAltitude(sunPos.ra, sunPos.dec, lat, lst);
+
+                            if (sunAlt > SUN_ALT_LIMIT) { visible = false; break; }
+
+                            const planetAlt = getAltitude(p.R, p.d, lat, lst);
+                            if (planetAlt < MIN_ALT) { visible = false; break; }
+                        }
+
+                        if (!visible) continue;
+
+                        // Calculate Mid Altitude for display
+                        const lstMid = getLST(t_mid, lon);
+                        const planetAltMid = getAltitude(p.R, p.d, lat, lstMid);
 
                         results.push({
                             name: p.N,
                             mag: p.V,
+                            ra: p.R,
+                            dec: p.d,
                             jd_mid: t_mid,
-                            jd_start: t_mid - halfDurDays,
-                            jd_end: t_mid + halfDurDays,
-                            alt: planetAlt,
+                            jd_start: t_start,
+                            jd_end: t_end,
+                            alt: planetAltMid,
                             dur: p.D,
                             depth: p.Dp
                         });
@@ -303,7 +326,7 @@
         function updateHeaderStyles(activeCol, dir) {
             const headers = document.querySelectorAll('th');
             const map = {
-                'name': 0, 'mag': 1, 'jd_start': 2, 'jd_mid': 3, 'jd_end': 4, 'alt': 5, 'dur': 6, 'depth': 7
+                'name': 0, 'mag': 1, 'ra': 2, 'dec': 3, 'jd_start': 4, 'jd_mid': 5, 'jd_end': 6, 'alt': 7, 'dur': 8, 'depth': 9
             };
             headers.forEach((th, idx) => {
                 th.classList.remove('sort-asc', 'sort-desc');
@@ -318,7 +341,7 @@
             tbody.innerHTML = '';
 
             if (currentResults.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color: var(--text-muted);">No observable transits found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:20px; color: var(--text-muted);">No observable transits found.</td></tr>`;
                 return;
             }
 
@@ -339,6 +362,8 @@
                 tr.innerHTML = `
                 <td style="font-weight:600; color: var(--primary);">${r.name}</td>
                 <td>${r.mag.toFixed(1)} ${magTag}</td>
+                <td class="font-mono">${r.ra.toFixed(4)}</td>
+                <td class="font-mono">${r.dec.toFixed(4)}</td>
                 <td class="font-mono">${fmtTime(r.jd_start)}</td>
                 <td class="font-mono" style="font-weight:bold; color: var(--text-main);">${fmtTime(r.jd_mid)}</td>
                 <td class="font-mono">${fmtTime(r.jd_end)}</td>
